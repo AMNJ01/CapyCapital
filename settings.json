@@ -1,0 +1,10 @@
+{
+  "liveServer.settings.donotShowInfoMsg": true,
+  "editor.formatOnSave": true,
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "files.insertFinalNewline": true,
+  "files.trimTrailingWhitespace": true,
+  "emmet.includeLanguages": {
+    "html": "html"
+  }
+}

@@ -1,0 +1,870 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CapyCapital — an unbothered AI for the Indian markets</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;1,9..144,500&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg-deep:#0B1220;
+    --bg-surface:#131F33;
+    --bg-surface-2:#1B2B45;
+    --line:#2A3B5C;
+    --accent:#C6924D;
+    --accent-soft:#8C6A38;
+    --up:#77B88E;
+    --down:#C1717A;
+    --text:#EAE3D3;
+    --text-muted:#93A3C6;
+    --text-faint:#5E6F93;
+    --radius:14px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg-deep);
+    color:var(--text);
+    font-family:'IBM Plex Sans', sans-serif;
+    line-height:1.5;
+    overflow-x:hidden;
+    -webkit-font-smoothing:antialiased;
+  }
+  ::selection{background:var(--accent-soft); color:var(--text);}
+  a{color:inherit;}
+  .mono{font-family:'IBM Plex Mono', monospace;}
+  .serif{font-family:'Fraunces', serif;}
+
+  /* ---------- background canvas ---------- */
+  #bgCanvas{
+    position:fixed; inset:0; width:100%; height:100%;
+    z-index:0; opacity:0.55; pointer-events:none;
+  }
+
+  .wrap{position:relative; z-index:1; max-width:1180px; margin:0 auto; padding:0 28px;}
+
+  /* ---------- nav ---------- */
+  nav{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:26px 0 10px;
+  }
+  .brand{display:flex; align-items:center; gap:10px;}
+  .brand-mark{width:30px; height:30px; flex:none;}
+  .brand-name{font-family:'Fraunces', serif; font-size:20px; font-weight:600; letter-spacing:0.2px;}
+  .brand-name em{font-style:italic; color:var(--accent); font-weight:500;}
+  nav .status{
+    font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--text-muted);
+    display:flex; align-items:center; gap:8px;
+  }
+  .dot{width:7px; height:7px; border-radius:50%; background:var(--up); box-shadow:0 0 8px var(--up); animation:pulse 2.4s ease-in-out infinite;}
+  @keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.35;}}
+
+  /* ---------- hero ---------- */
+  .hero{
+    display:grid; grid-template-columns:220px 1fr; gap:40px;
+    align-items:center; padding:52px 0 30px; position:relative;
+  }
+  .capy-holder{position:relative; width:210px; height:210px;}
+  .capy-holder svg{width:100%; height:100%;}
+  .ripple{
+    position:absolute; left:50%; bottom:-6px; transform:translateX(-50%);
+    width:170px; height:16px; border-radius:50%;
+    background:radial-gradient(ellipse at center, rgba(140,180,160,0.35), transparent 70%);
+    animation:ripple 3.4s ease-in-out infinite;
+  }
+  @keyframes ripple{0%,100%{transform:translateX(-50%) scaleX(1);}50%{transform:translateX(-50%) scaleX(1.12);}}
+
+  .hero-text h1{
+    font-family:'Fraunces', serif; font-weight:600; font-size:clamp(28px,4vw,42px);
+    margin:0 0 10px; line-height:1.15;
+  }
+  .hero-text h1 span{color:var(--accent);}
+  .hero-line{
+    font-size:15.5px; color:var(--text-muted); max-width:520px; min-height:24px;
+  }
+  .hero-line .cursor{display:inline-block; width:7px; height:15px; background:var(--accent); margin-left:2px; vertical-align:-2px; animation:blink 1s step-end infinite;}
+  @keyframes blink{50%{opacity:0;}}
+
+  .bubbles{position:absolute; inset:0; pointer-events:none;}
+  .bubble{
+    position:absolute; font-family:'IBM Plex Mono', monospace; font-size:11.5px;
+    color:var(--text-faint); background:rgba(30,47,39,0.55); border:1px solid var(--line);
+    padding:6px 11px; border-radius:20px; white-space:nowrap;
+    animation:float 7s ease-in-out infinite;
+  }
+  @keyframes float{0%,100%{transform:translateY(0px);}50%{transform:translateY(-11px);}}
+
+  /* ---------- section label ---------- */
+  .section-head{margin:54px 0 18px; display:flex; align-items:baseline; justify-content:space-between; gap:16px; flex-wrap:wrap;}
+  .section-head h2{font-family:'Fraunces', serif; font-weight:600; font-size:22px; margin:0;}
+  .section-head p{margin:0; color:var(--text-muted); font-size:13.5px;}
+
+  /* ---------- top module row (Quant + Sentiment) ---------- */
+  .row-2{display:grid; grid-template-columns:1fr 1fr; gap:20px;}
+  .card{
+    background:var(--bg-surface); border:1px solid var(--line); border-radius:var(--radius);
+    padding:22px; position:relative; overflow:hidden;
+  }
+  .card-tag{
+    font-family:'IBM Plex Mono', monospace; font-size:11px; color:var(--text-faint);
+    text-transform:uppercase; letter-spacing:0.04em;
+  }
+  .card h3{font-family:'Fraunces', serif; font-size:19px; margin:6px 0 8px; font-weight:600;}
+  .card p.desc{color:var(--text-muted); font-size:13.5px; margin:0 0 16px; max-width:38ch;}
+  .badge-soon{
+    position:absolute; top:20px; right:20px; font-family:'IBM Plex Mono', monospace;
+    font-size:10.5px; color:var(--accent); border:1px solid var(--accent-soft);
+    padding:3px 9px; border-radius:20px; background:rgba(198,146,77,0.08);
+  }
+
+  .quant-viz{height:96px; display:flex; align-items:flex-end; gap:4px; margin-top:6px;}
+  .quant-viz i{flex:1; background:linear-gradient(180deg, var(--up), rgba(119,184,142,0.15)); border-radius:2px 2px 0 0; opacity:0.85;}
+  .quant-viz i.down{background:linear-gradient(180deg, var(--down), rgba(193,113,122,0.15));}
+
+  .gauge-wrap{display:flex; align-items:center; gap:18px; margin-top:6px;}
+  .gauge{width:110px; height:64px; position:relative;}
+  .gauge svg{width:100%; height:100%;}
+  .gauge-readout{font-family:'IBM Plex Mono', monospace;}
+  .gauge-readout .big{font-size:26px; color:var(--up); font-weight:600;}
+  .gauge-readout .small{font-size:12px; color:var(--text-muted); margin-top:2px;}
+
+  /* ---------- Analyze (MVP) ---------- */
+  .analyze-card{
+    background:var(--bg-surface); border:1px solid var(--accent-soft); border-radius:var(--radius);
+    padding:28px; margin-top:0; box-shadow:0 0 0 1px rgba(198,146,77,0.04), 0 30px 60px -30px rgba(0,0,0,0.5);
+  }
+  .analyze-top{display:flex; justify-content:space-between; align-items:flex-start; gap:16px; flex-wrap:wrap; margin-bottom:18px;}
+  .mvp-pill{
+    font-family:'IBM Plex Mono', monospace; font-size:10.5px; color:#0f1b16; background:var(--accent);
+    padding:3px 10px; border-radius:20px; font-weight:600; letter-spacing:0.02em;
+  }
+  .query-row{display:flex; gap:10px; align-items:flex-start;}
+  textarea#queryInput{
+    flex:1; resize:vertical; min-height:64px; background:var(--bg-deep); border:1px solid var(--line);
+    color:var(--text); border-radius:10px; padding:14px 16px; font-family:'IBM Plex Sans', sans-serif;
+    font-size:14.5px; outline:none;
+  }
+  textarea#queryInput:focus{border-color:var(--accent-soft);}
+  .analyze-btn{
+    background:var(--accent); color:#14231d; border:none; border-radius:10px; padding:0 20px;
+    font-family:'IBM Plex Mono', monospace; font-weight:600; font-size:13.5px; cursor:pointer;
+    align-self:stretch; min-width:120px; transition:filter 0.15s ease;
+  }
+  .analyze-btn:hover{filter:brightness(1.08);}
+  .analyze-btn:active{filter:brightness(0.94);}
+  .examples{display:flex; gap:8px; flex-wrap:wrap; margin-top:12px;}
+  .example-chip{
+    font-family:'IBM Plex Mono', monospace; font-size:11.5px; color:var(--text-muted);
+    background:var(--bg-deep); border:1px solid var(--line); padding:6px 11px; border-radius:20px;
+    cursor:pointer;
+  }
+  .example-chip:hover{border-color:var(--accent-soft); color:var(--text);}
+
+  .parse-block{
+    margin-top:22px; border-top:1px dashed var(--line); padding-top:20px; display:none;
+  }
+  .parse-block.show{display:block; animation:reveal 0.35s ease both;}
+  @keyframes reveal{from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:translateY(0);}}
+  .parse-block h4{font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--text-faint); text-transform:uppercase; letter-spacing:0.05em; margin:0 0 12px;}
+  .parse-grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:10px;}
+  .parse-item{background:var(--bg-deep); border:1px solid var(--line); border-radius:10px; padding:10px 13px;}
+  .parse-item .k{font-family:'IBM Plex Mono', monospace; font-size:10.5px; color:var(--text-faint); text-transform:uppercase; letter-spacing:0.04em;}
+  .parse-item .v{font-size:13.5px; margin-top:3px;}
+  .parse-item .v.unclear{color:var(--text-faint); font-style:italic;}
+  .intent-line{
+    margin-top:14px; padding:12px 15px; background:rgba(198,146,77,0.08); border:1px solid var(--accent-soft);
+    border-radius:10px; font-size:13.5px; color:var(--text);
+  }
+  .intent-line b{color:var(--accent);}
+
+  .results-block{margin-top:22px; display:none;}
+  .results-block.show{display:block; animation:reveal 0.4s ease both;}
+  .results-head{display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px; margin-bottom:14px;}
+  .results-head h4{font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--text-faint); text-transform:uppercase; letter-spacing:0.05em; margin:0;}
+  .source-tag{font-family:'IBM Plex Mono', monospace; font-size:10.5px; color:var(--text-faint);}
+  .stat-row{display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:20px;}
+  .stat{background:var(--bg-deep); border:1px solid var(--line); border-radius:10px; padding:14px 16px;}
+  .stat .num{font-family:'IBM Plex Mono', monospace; font-size:22px; font-weight:600;}
+  .stat .lbl{font-size:11.5px; color:var(--text-muted); margin-top:3px;}
+  .stat .num.up{color:var(--up);} .stat .num.down{color:var(--down);}
+  .hist-wrap{background:var(--bg-deep); border:1px solid var(--line); border-radius:10px; padding:16px; margin-bottom:16px;}
+  .hist-wrap svg{width:100%; height:130px; display:block;}
+  .verdict{
+    font-size:14px; color:var(--text); background:var(--bg-surface-2); border-left:3px solid var(--accent);
+    padding:14px 16px; border-radius:0 10px 10px 0; margin-bottom:6px;
+  }
+  .fine{font-size:11.5px; color:var(--text-faint); margin-top:10px;}
+
+  /* ---------- trending strip ---------- */
+  .ticker-wrap{
+    overflow:hidden; background:var(--bg-surface); border:1px solid var(--line); border-radius:var(--radius);
+    padding:16px 0; margin-top:20px; position:relative;
+  }
+  .ticker-fade{position:absolute; top:0; bottom:0; width:60px; z-index:2;}
+  .ticker-fade.l{left:0; background:linear-gradient(90deg, var(--bg-surface), transparent);}
+  .ticker-fade.r{right:0; background:linear-gradient(270deg, var(--bg-surface), transparent);}
+  .ticker-track{display:flex; gap:0; width:max-content; animation:scroll 34s linear infinite;}
+  @keyframes scroll{from{transform:translateX(0);} to{transform:translateX(-50%);}}
+  .tick-item{
+    font-family:'IBM Plex Mono', monospace; font-size:13.5px; display:flex; align-items:center; gap:9px;
+    padding:0 26px; border-right:1px solid var(--line); white-space:nowrap;
+  }
+  .tick-item .sym{font-weight:600;}
+  .tick-item .chg.up{color:var(--up);}
+  .tick-item .chg.down{color:var(--down);}
+  .tick-item .why{color:var(--text-faint); font-family:'IBM Plex Sans', sans-serif; font-size:12px;}
+
+  /* ---------- footer ---------- */
+  footer{margin:60px 0 30px; padding-top:22px; border-top:1px solid var(--line);}
+  footer .foot-top{display:flex; justify-content:space-between; gap:20px; flex-wrap:wrap; margin-bottom:14px;}
+  footer .foot-brand{font-family:'Fraunces', serif; font-size:15px; color:var(--text-muted);}
+  .disclaimer{
+    font-size:11.5px; line-height:1.7; color:var(--text-faint); max-width:900px;
+  }
+
+  @media (max-width:760px){
+    .hero{grid-template-columns:1fr; text-align:center;}
+    .capy-holder{margin:0 auto;}
+    .row-2{grid-template-columns:1fr;}
+    .stat-row{grid-template-columns:1fr 1fr;}
+    .query-row{flex-direction:column;}
+    .analyze-btn{padding:12px;}
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    *{animation-duration:0.001s !important; animation-iteration-count:1 !important;}
+  }
+</style>
+</head>
+<body>
+
+<canvas id="bgCanvas"></canvas>
+
+<div class="wrap">
+
+  <nav>
+    <div class="brand">
+      <svg class="brand-mark" viewBox="0 0 40 40"><circle cx="20" cy="20" r="19" fill="none" stroke="#C6924D" stroke-width="1.4"/><ellipse cx="20" cy="23" rx="11" ry="8" fill="#C6924D"/><circle cx="14" cy="14" r="3.4" fill="#C6924D"/><circle cx="26" cy="14" r="3.4" fill="#C6924D"/><path d="M15 22 q5 3 10 0" stroke="#0B1220" stroke-width="1.3" fill="none" stroke-linecap="round"/></svg>
+      <div class="brand-name">Capy<em>Capital</em></div>
+    </div>
+    <div class="status"><span class="dot"></span> NSE / BSE data <span class="mono" style="color:var(--text-faint)">·</span> market watch idle</div>
+  </nav>
+
+  <section class="hero">
+    <div class="capy-holder">
+      <div class="ripple"></div>
+      <svg viewBox="0 0 220 220" xmlns="http://www.w3.org/2000/svg">
+        <ellipse cx="110" cy="150" rx="78" ry="42" fill="#B8834A"/>
+        <ellipse cx="110" cy="150" rx="78" ry="42" fill="#000" opacity="0.06"/>
+        <ellipse cx="70" cy="176" rx="14" ry="7" fill="#9A6C38"/>
+        <ellipse cx="150" cy="176" rx="14" ry="7" fill="#9A6C38"/>
+        <circle cx="152" cy="98" r="46" fill="#C6924D"/>
+        <circle cx="122" cy="66" r="12" fill="#C6924D"/>
+        <circle cx="178" cy="66" r="12" fill="#A97A3F"/>
+        <circle cx="122" cy="66" r="5.5" fill="#8C6A38"/>
+        <circle cx="178" cy="66" r="5.5" fill="#8C6A38"/>
+        <path d="M133 96 q6 5 13 0" stroke="#5C4322" stroke-width="2.6" fill="none" stroke-linecap="round"/>
+        <path d="M163 96 q6 5 13 0" stroke="#5C4322" stroke-width="2.6" fill="none" stroke-linecap="round"/>
+        <ellipse cx="152" cy="116" rx="10" ry="7" fill="#8C6A38"/>
+        <circle cx="152" cy="114" r="2" fill="#3A2A15"/>
+        <path d="M50 150 q3 8 0 15" stroke="#8FA396" stroke-width="2" fill="none" opacity="0.5" stroke-linecap="round"/>
+        <path d="M170 150 q-3 8 0 15" stroke="#8FA396" stroke-width="2" fill="none" opacity="0.5" stroke-linecap="round"/>
+      </svg>
+    </div>
+    <div class="hero-text">
+      <h1>Hey. I'm Capy. <span>I will not make you rich.</span></h1>
+      <p class="hero-line mono" id="heroLine"></p>
+      <div class="bubbles" id="bubbleField"></div>
+    </div>
+  </section>
+
+  <!-- ============ Module 1 + 2 ============ -->
+  <div class="section-head">
+    <h2>Two ways to look at the same chaos</h2>
+    <p>One for people who trust numbers. One for people who trust vibes. Both demo previews.</p>
+  </div>
+  <div class="row-2">
+    <div class="card">
+      <span class="badge-soon">Preview</span>
+      <div class="card-tag">Module 01 — Quant</div>
+      <h3>Data Analysis</h3>
+      <p class="desc">Raw price action, volatility bands and factor screens, for people who want the numbers and none of my opinions.</p>
+      <div class="quant-viz" id="quantViz"></div>
+    </div>
+    <div class="card">
+      <span class="badge-soon">Preview</span>
+      <div class="card-tag">Module 02 — Sentiment</div>
+      <h3>Market Mood</h3>
+      <p class="desc">What the news, forums and analyst notes are feeling right now. Vibes, quantified, still not advice.</p>
+      <div class="gauge-wrap">
+        <div class="gauge"><svg viewBox="0 0 110 64" id="gaugeSvg"></svg></div>
+        <div class="gauge-readout">
+          <div class="big">Cautiously Calm</div>
+          <div class="small">62/100 · leaning constructive</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ Module 3: ANALYZE (MVP) ============ -->
+  <div class="section-head">
+    <h2>Analyze</h2>
+    <p>Ask a real question about market behaviour. I'll show you exactly how I understood it before I answer.</p>
+  </div>
+  <div class="analyze-card">
+    <div class="analyze-top">
+      <div>
+        <span class="mvp-pill">MODULE 03 · WORKING MVP</span>
+      </div>
+    </div>
+    <div class="query-row">
+      <textarea id="queryInput" placeholder="e.g. When NIFTY falls more than 1% in a day with high volatility, what happens the next day?"></textarea>
+      <button class="analyze-btn" id="analyzeBtn">Analyze →</button>
+    </div>
+    <div class="examples" id="exampleChips"></div>
+
+    <div class="parse-block" id="parseBlock">
+      <h4>How I read that</h4>
+      <div class="parse-grid" id="parseGrid"></div>
+      <div class="intent-line" id="intentLine"></div>
+    </div>
+
+    <div class="results-block" id="resultsBlock">
+      <div class="results-head">
+        <h4>What actually happened, historically</h4>
+        <span class="source-tag mono" id="sourceTag"></span>
+      </div>
+      <div class="stat-row" id="statRow"></div>
+      <div class="hist-wrap"><svg id="histChart"></svg></div>
+      <div class="verdict" id="verdictText"></div>
+      <div class="fine">Sample size and quality vary by ticker and lookback. This is a pattern in old candles, not a promise about tomorrow's.</div>
+    </div>
+  </div>
+
+  <!-- ============ Module 4: Trending ============ -->
+  <div class="section-head">
+    <h2>What everyone's staring at right now</h2>
+    <p>Not a recommendation. Just where the attention is. Preview data.</p>
+  </div>
+  <div class="ticker-wrap">
+    <div class="ticker-fade l"></div>
+    <div class="ticker-fade r"></div>
+    <div class="ticker-track" id="tickerTrack"></div>
+  </div>
+
+  <footer>
+    <div class="foot-top">
+      <div class="foot-brand">Capy<em style="color:var(--accent); font-style:italic;">Capital</em></div>
+      <div class="mono" style="font-size:11.5px; color:var(--text-faint);">Built for a product thinking exercise, not for production trading.</div>
+    </div>
+    <p class="disclaimer">
+      CapyCapital is a prototype built for a hiring assignment. It is not a SEBI-registered investment adviser or research analyst, and nothing on this page is investment advice, a recommendation, or a solicitation to buy or sell any security. Module 3 runs a rule-based reading of your question against historical price data (live where reachable, illustrative sample data otherwise) — it describes what has happened before, not what will happen next. Investments in securities market are subject to market risks; read all related documents carefully before investing. Past performance is not indicative of future returns.
+    </p>
+  </footer>
+</div>
+
+<script>
+/* ============================================================
+   BACKGROUND: drifting candles + a faint line graph
+   ============================================================ */
+(function(){
+  const canvas = document.getElementById('bgCanvas');
+  const ctx = canvas.getContext('2d');
+  let w,h,dpr;
+  function resize(){
+    dpr = Math.min(window.devicePixelRatio||1, 2);
+    w = window.innerWidth; h = window.innerHeight;
+    canvas.width = w*dpr; canvas.height = h*dpr;
+    canvas.style.width=w+'px'; canvas.style.height=h+'px';
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+  }
+  resize(); window.addEventListener('resize', resize);
+
+  const rng = mulberry32(42);
+  const candles = [];
+  const cols = 26;
+  for(let i=0;i<cols;i++){
+    candles.push({
+      x: i,
+      base: 0.5 + Math.sin(i*0.7)*0.15,
+      phase: rng()*Math.PI*2,
+      speed: 0.15 + rng()*0.1,
+      up: rng() > 0.45
+    });
+  }
+  function mulberry32(a){
+    return function(){
+      a|=0; a = a+0x6D2B79F5|0;
+      let t = Math.imul(a ^ a>>>15, 1|a);
+      t = t + Math.imul(t ^ t>>>7, 61|t) ^ t;
+      return ((t ^ t>>>14)>>>0)/4294967296;
+    }
+  }
+  let t0 = performance.now();
+  function draw(now){
+    const dt = (now-t0)/1000; 
+    ctx.clearRect(0,0,w,h);
+    const colW = w/cols;
+    const midY = h*0.62;
+    ctx.strokeStyle = 'rgba(140,180,160,0.16)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    for(let i=0;i<cols;i++){
+      const c = candles[i];
+      const osc = Math.sin(dt*c.speed + c.phase);
+      const bodyH = 26 + osc*14;
+      const cx = colW*i + colW*0.5;
+      const cy = midY + Math.sin(dt*0.1 + i)*30;
+      const color = c.up ? 'rgba(119,184,142,0.16)' : 'rgba(193,113,122,0.14)';
+      ctx.fillStyle = color;
+      ctx.fillRect(cx-colW*0.18, cy-bodyH/2, colW*0.36, bodyH);
+      ctx.strokeStyle = color;
+      ctx.beginPath();
+      ctx.moveTo(cx, cy-bodyH/2-14); ctx.lineTo(cx, cy+bodyH/2+14);
+      ctx.stroke();
+      if(i===0) ctx.moveTo(cx, cy);
+      else ctx.lineTo(cx, cy);
+    }
+    ctx.strokeStyle = 'rgba(198,146,77,0.22)';
+    ctx.lineWidth = 1.4;
+    ctx.stroke();
+    requestAnimationFrame(draw);
+  }
+  requestAnimationFrame(draw);
+})();
+
+/* ============================================================
+   HERO: rotating capybara one-liners + floating bubbles
+   ============================================================ */
+const capyLines = [
+  "I don't do tips. I do arithmetic, badly, in public.",
+  "Not a bull. Not a bear. A large rodent with opinions about candles.",
+  "SEBI made me say that. All of it.",
+  "I remember everything dumb I read on the internet about markets. Turns out that's most of it.",
+  "Ask me something specific. I get shy around vague questions.",
+  "Green candle, red candle — I'm mostly here for the pattern, not the drama."
+];
+const heroLine = document.getElementById('heroLine');
+let lineIdx = 0;
+function typeLine(text, cb){
+  heroLine.innerHTML = '';
+  let i = 0;
+  const span = document.createElement('span');
+  heroLine.appendChild(span);
+  const cursor = document.createElement('span');
+  cursor.className='cursor';
+  heroLine.appendChild(cursor);
+  const iv = setInterval(()=>{
+    span.textContent = text.slice(0,i);
+    i++;
+    if(i>text.length+1){ clearInterval(iv); if(cb) setTimeout(cb, 2600); }
+  }, 22);
+}
+function cycleLines(){
+  typeLine(capyLines[lineIdx], ()=>{
+    lineIdx = (lineIdx+1) % capyLines.length;
+    cycleLines();
+  });
+}
+cycleLines();
+
+const bubbleTexts = ["3-min chart, 30-year decision", "volume doesn't lie, traders do", "not financial advice, just fiber and facts"];
+const bubbleField = document.getElementById('bubbleField');
+const bubblePos = [ {top:'6%', right:'2%'}, {top:'52%', right:'-4%'}, {top:'86%', right:'14%'} ];
+bubbleTexts.forEach((t,i)=>{
+  const el = document.createElement('div');
+  el.className='bubble'; el.textContent = t;
+  Object.assign(el.style, bubblePos[i], {animationDelay:(i*1.3)+'s'});
+  bubbleField.appendChild(el);
+});
+
+/* ============================================================
+   MODULE 1 preview viz (static-ish bars)
+   ============================================================ */
+(function(){
+  const rng = mulberry32(7);
+  const el = document.getElementById('quantViz');
+  for(let i=0;i<28;i++){
+    const v = 20 + rng()*76;
+    const down = rng() < 0.42;
+    const bar = document.createElement('i');
+    bar.style.height = v+'%';
+    if(down) bar.classList.add('down');
+    el.appendChild(bar);
+  }
+  function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return ((t^t>>>14)>>>0)/4294967296;}}
+})();
+
+/* Module 2 gauge */
+(function(){
+  const svg = document.getElementById('gaugeSvg');
+  const val = 0.62; // 0..1
+  const cx=55, cy=58, r=46;
+  const startAngle = Math.PI, endAngle = 0;
+  const angle = Math.PI - val*Math.PI;
+  function arcPath(a0,a1,rad){
+    const x0 = cx + rad*Math.cos(a0), y0 = cy - rad*Math.sin(a0);
+    const x1 = cx + rad*Math.cos(a1), y1 = cy - rad*Math.sin(a1);
+    const large = Math.abs(a1-a0) > Math.PI ? 1: 0;
+    return `M ${x0} ${y0} A ${rad} ${rad} 0 ${large} 1 ${x1} ${y1}`;
+  }
+  svg.innerHTML = `
+    <path d="${arcPath(Math.PI,0,r)}" stroke="#2A3B5C" stroke-width="9" fill="none" stroke-linecap="round"/>
+    <path d="${arcPath(Math.PI,angle,r)}" stroke="#77B88E" stroke-width="9" fill="none" stroke-linecap="round"/>
+    <circle cx="${cx + r*Math.cos(angle)}" cy="${cy - r*Math.sin(angle)}" r="4.5" fill="#EAE3D3"/>
+  `;
+})();
+
+/* ============================================================
+   MODULE 4: trending ticker (illustrative preview data)
+   ============================================================ */
+const trendingData = [
+  {sym:'RELIANCE', chg:1.8, why:'buzz around refining margins'},
+  {sym:'TATAMOTORS', chg:-2.3, why:'EV sales chatter'},
+  {sym:'HDFCBANK', chg:0.6, why:'steady, as usual'},
+  {sym:'ADANIENT', chg:4.1, why:'high options activity'},
+  {sym:'INFY', chg:-0.9, why:'IT sector pullback'},
+  {sym:'ZOMATO', chg:3.2, why:'unusual volume spike'},
+  {sym:'TCS', chg:0.2, why:'quiet, quietly relevant'},
+  {sym:'SBIN', chg:-1.4, why:'PSU basket weakness'}
+];
+(function(){
+  const track = document.getElementById('tickerTrack');
+  const doubled = trendingData.concat(trendingData);
+  doubled.forEach(d=>{
+    const el = document.createElement('div');
+    el.className='tick-item';
+    const cls = d.chg>=0?'up':'down';
+    const sign = d.chg>=0?'+':'';
+    el.innerHTML = `<span class="sym">${d.sym}</span><span class="chg ${cls}">${sign}${d.chg.toFixed(1)}%</span><span class="why">${d.why}</span>`;
+    track.appendChild(el);
+  });
+})();
+
+/* ============================================================
+   MODULE 3: ANALYZE — rule-based NL parser + backtest engine
+   ============================================================ */
+
+// ---- ticker map ----
+const TICKER_MAP = {
+  'NIFTY':{sym:'^NSEI', label:'NIFTY 50', base:22000},
+  'NIFTY50':{sym:'^NSEI', label:'NIFTY 50', base:22000},
+  'BANKNIFTY':{sym:'^NSEBANK', label:'BANK NIFTY', base:48000},
+  'SENSEX':{sym:'^BSESN', label:'SENSEX', base:73000},
+  'RELIANCE':{sym:'RELIANCE.NS', label:'Reliance Industries', base:2900},
+  'TCS':{sym:'TCS.NS', label:'TCS', base:3800},
+  'INFY':{sym:'INFY.NS', label:'Infosys', base:1550},
+  'INFOSYS':{sym:'INFY.NS', label:'Infosys', base:1550},
+  'HDFCBANK':{sym:'HDFCBANK.NS', label:'HDFC Bank', base:1650},
+  'ICICIBANK':{sym:'ICICIBANK.NS', label:'ICICI Bank', base:1150},
+  'SBIN':{sym:'SBIN.NS', label:'State Bank of India', base:800},
+  'TATAMOTORS':{sym:'TATAMOTORS.NS', label:'Tata Motors', base:950},
+  'WIPRO':{sym:'WIPRO.NS', label:'Wipro', base:480},
+  'ITC':{sym:'ITC.NS', label:'ITC', base:430},
+  'AXISBANK':{sym:'AXISBANK.NS', label:'Axis Bank', base:1150},
+  'KOTAKBANK':{sym:'KOTAKBANK.NS', label:'Kotak Bank', base:1750},
+  'MARUTI':{sym:'MARUTI.NS', label:'Maruti Suzuki', base:12000},
+  'ADANIENT':{sym:'ADANIENT.NS', label:'Adani Enterprises', base:3000},
+  'ZOMATO':{sym:'ZOMATO.NS', label:'Zomato', base:220}
+};
+
+function parseQuery(raw){
+  const text = raw.trim();
+  const upper = text.toUpperCase();
+
+  // instrument
+  let instrument = null;
+  for(const key of Object.keys(TICKER_MAP)){
+    const re = new RegExp('\\b'+key+'\\b');
+    if(re.test(upper)){ instrument = key; break; }
+  }
+
+  // timeframe
+  let timeframe = 'Daily';
+  if(/intraday|minute chart|5[- ]?min|15[- ]?min/i.test(text)) timeframe = 'Intraday';
+  else if(/weekly/i.test(text)) timeframe = 'Weekly';
+  else if(/monthly/i.test(text)) timeframe = 'Monthly';
+
+  // direction + magnitude
+  const fallWords = /(falls?|drops?|declines?|dips?|crashes?|tanks?|sheds?|slides?)/i;
+  const riseWords = /(rises?|gains?|jumps?|rallies?|surges?|climbs?|spikes? up)/i;
+  let direction = null;
+  if(fallWords.test(text)) direction = 'down';
+  else if(riseWords.test(text)) direction = 'up';
+
+  const pctMatch = text.match(/(\d+(\.\d+)?)\s*%/);
+  const magnitude = pctMatch ? parseFloat(pctMatch[1]) : 1.0;
+  const magnitudeExplicit = !!pctMatch;
+
+  let entryCondition = null;
+  let entryClear = true;
+  if(direction){
+    entryCondition = `Daily change ${direction==='down' ? '≤ -' : '≥ '}${magnitude}%`;
+  } else {
+    entryCondition = `Any move ≥ ${magnitude}% (direction not specified — checking both)`;
+    entryClear = false;
+  }
+
+  // holding / exit
+  let holdingDays = 1;
+  let exitLabel = 'Next trading day';
+  const nDayMatch = text.match(/(after|over|for)\s+(\d+)\s*(day|days|week|weeks)/i);
+  if(nDayMatch){
+    let n = parseInt(nDayMatch[2],10);
+    if(/week/i.test(nDayMatch[3])) n = n*5;
+    holdingDays = n;
+    exitLabel = `${n} trading day${n>1?'s':''} later`;
+  } else if(/same day|intraday close/i.test(text)){
+    holdingDays = 0;
+    exitLabel = 'Same day close';
+  } else if(/next day|following day/i.test(text)){
+    holdingDays = 1;
+    exitLabel = 'Next trading day';
+  }
+
+  // filters
+  const filters = [];
+  if(/high volatility|volatile/i.test(text)) filters.push('High volatility day (range > 2%)');
+  if(/low volatility/i.test(text)) filters.push('Low volatility day (range < 1%)');
+  if(/high volume/i.test(text)) filters.push('Above-average volume');
+  if(/low volume/i.test(text)) filters.push('Below-average volume');
+
+  // intent
+  let intent = 'General behaviour pattern after the trigger condition';
+  if(/probability|chance|how often|likely/i.test(text)) intent = 'Likelihood / frequency of an outcome';
+  else if(/average|how much|magnitude|typical move/i.test(text)) intent = 'Expected size of the follow-through move';
+  else if(/should i|worth (it|buying|selling)/i.test(text)) intent = "Whether the pattern historically 'pays' — read as description, not advice";
+
+  return {
+    raw:text, instrument, timeframe, direction, magnitude, magnitudeExplicit,
+    entryCondition, entryClear, holdingDays, exitLabel, filters, intent
+  };
+}
+
+function renderParse(p){
+  const grid = document.getElementById('parseGrid');
+  grid.innerHTML = '';
+  const meta = TICKER_MAP[p.instrument];
+  const items = [
+    {k:'Instrument', v: meta ? meta.label : 'Not specified — defaulting to NIFTY 50', unclear: !meta},
+    {k:'Timeframe', v: p.timeframe},
+    {k:'Entry condition', v: p.entryCondition, unclear: !p.entryClear},
+    {k:'Exit / holding period', v: p.exitLabel},
+    {k:'Filters', v: p.filters.length ? p.filters.join(', ') : 'None detected', unclear: !p.filters.length},
+  ];
+  items.forEach(it=>{
+    const div = document.createElement('div');
+    div.className='parse-item';
+    div.innerHTML = `<div class="k">${it.k}</div><div class="v ${it.unclear?'unclear':''}">${it.v}</div>`;
+    grid.appendChild(div);
+  });
+  document.getElementById('intentLine').innerHTML = `<b>What you're actually asking:</b> ${p.intent}`;
+  document.getElementById('parseBlock').classList.add('show');
+}
+
+// ---- seeded RNG + mock OHLC generator (fallback data) ----
+function mulberry32(seed){
+  let a = seed;
+  return function(){
+    a |= 0; a = a + 0x6D2B79F5 | 0;
+    let t = Math.imul(a ^ a>>>15, 1 | a);
+    t = t + Math.imul(t ^ t>>>7, 61 | t) ^ t;
+    return ((t ^ t>>>14) >>> 0) / 4294967296;
+  }
+}
+function seedFromString(str){
+  let h = 1779033703 ^ str.length;
+  for(let i=0;i<str.length;i++){
+    h = Math.imul(h ^ str.charCodeAt(i), 3432918353);
+    h = h<<13 | h>>>19;
+  }
+  return (h ^ h>>>16) >>> 0;
+}
+function generateMockSeries(tickerKey, days){
+  const meta = TICKER_MAP[tickerKey] || {base:1000};
+  const rng = mulberry32(seedFromString(tickerKey||'DEFAULT'));
+  let price = meta.base;
+  const series = [];
+  let volRegime = 0.9; // baseline daily vol %
+  for(let i=0;i<days;i++){
+    if(rng() < 0.04) volRegime = 0.6 + rng()*2.2; // occasional vol regime shift
+    const shock = (rng()+rng()+rng()-1.5) / 1.5; // crude normal-ish, range ~[-1,1]
+    const drift = 0.015; // slight upward drift
+    const pctChange = drift + shock*volRegime;
+    const open = price;
+    const close = price*(1+pctChange/100);
+    const range = Math.abs(pctChange)*(0.6+rng()*0.9) + volRegime*0.3;
+    const high = Math.max(open,close) * (1+range/200);
+    const low = Math.min(open,close) * (1-range/200);
+    const volume = Math.round(1000000 * (0.6 + rng()*1.2) * (1+Math.abs(pctChange)/3));
+    series.push({i, open, high, low, close, volume});
+    price = close;
+  }
+  return series;
+}
+
+// ---- attempt live fetch (Yahoo chart via CORS proxy), else fallback ----
+async function fetchSeries(tickerKey){
+  const meta = TICKER_MAP[tickerKey];
+  const symbol = meta ? meta.sym : '^NSEI';
+  const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?interval=1d&range=3y`;
+  const proxied = `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
+  try{
+    const res = await fetch(proxied, {cache:'no-store'});
+    if(!res.ok) throw new Error('bad status');
+    const data = await res.json();
+    const result = data.chart.result[0];
+    const ts = result.timestamp;
+    const q = result.indicators.quote[0];
+    const series = [];
+    for(let i=0;i<ts.length;i++){
+      if(q.close[i]==null || q.open[i]==null) continue;
+      series.push({
+        i, date: new Date(ts[i]*1000), open:q.open[i], high:q.high[i], low:q.low[i], close:q.close[i], volume:q.volume[i]||0
+      });
+    }
+    if(series.length < 50) throw new Error('too little data');
+    return {series, live:true};
+  }catch(err){
+    return {series: generateMockSeries(tickerKey, 750), live:false};
+  }
+}
+
+function runBacktest(series, p){
+  // compute daily pct change + range%
+  const rows = [];
+  for(let i=1;i<series.length;i++){
+    const prev = series[i-1], cur = series[i];
+    const pct = (cur.close - prev.close)/prev.close*100;
+    const rangePct = (cur.high - cur.low)/prev.close*100;
+    rows.push({i, pct, rangePct, close:cur.close});
+  }
+  const wantsHighVol = p.filters.some(f=>/High volatility/.test(f));
+  const wantsLowVol = p.filters.some(f=>/Low volatility/.test(f));
+
+  const hits = [];
+  for(let i=0;i<rows.length;i++){
+    const r = rows[i];
+    let entryMet = false;
+    if(p.direction === 'down') entryMet = r.pct <= -p.magnitude;
+    else if(p.direction === 'up') entryMet = r.pct >= p.magnitude;
+    else entryMet = Math.abs(r.pct) >= p.magnitude;
+
+    if(!entryMet) continue;
+    if(wantsHighVol && r.rangePct < 2) continue;
+    if(wantsLowVol && r.rangePct > 1) continue;
+
+    const exitIdx = i + p.holdingDays;
+    if(exitIdx >= rows.length) continue;
+    const fwdReturn = (rows[exitIdx].close - r.close)/r.close*100;
+    hits.push({entryIdx:i, entryPct:r.pct, fwdReturn});
+  }
+  return hits;
+}
+
+function renderResults(hits, p, live){
+  document.getElementById('sourceTag').textContent = live ? 'live data' : 'sample data (live feed unreachable)';
+  const statRow = document.getElementById('statRow');
+  statRow.innerHTML = '';
+  const n = hits.length;
+  const up = hits.filter(h=>h.fwdReturn>0).length;
+  const avg = n ? hits.reduce((s,h)=>s+h.fwdReturn,0)/n : 0;
+  const winPct = n ? Math.round(up/n*100) : 0;
+  const stats = [
+    {num:n, lbl:'Times this happened (3yr)'},
+    {num:(n? winPct+'%':'—'), lbl:'Closed higher after', cls: n && winPct>=50 ? 'up':'down'},
+    {num:(n? (avg>=0?'+':'')+avg.toFixed(2)+'%':'—'), lbl:'Average forward move', cls: n && avg>=0?'up':'down'},
+    {num:(n? (Math.max(...hits.map(h=>h.fwdReturn))).toFixed(2)+'%':'—'), lbl:'Best case seen'}
+  ];
+  stats.forEach(s=>{
+    const div = document.createElement('div');
+    div.className='stat';
+    div.innerHTML = `<div class="num mono ${s.cls||''}">${s.num}</div><div class="lbl">${s.lbl}</div>`;
+    statRow.appendChild(div);
+  });
+
+  // mini chart of forward returns
+  const svg = document.getElementById('histChart');
+  const W = svg.parentElement.clientWidth - 32, H = 130;
+  svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+  svg.innerHTML = '';
+  if(n){
+    const vals = hits.map(h=>h.fwdReturn);
+    const maxAbs = Math.max(1, ...vals.map(v=>Math.abs(v)));
+    const barW = Math.max(2, W/vals.length - 2);
+    const zero = H/2;
+    vals.forEach((v,idx)=>{
+      const bh = Math.abs(v)/maxAbs * (H/2 - 8);
+      const x = idx*(W/vals.length);
+      const y = v>=0 ? zero-bh : zero;
+      const rect = document.createElementNS('http://www.w3.org/2000/svg','rect');
+      rect.setAttribute('x',x); rect.setAttribute('y',y);
+      rect.setAttribute('width',barW); rect.setAttribute('height',bh);
+      rect.setAttribute('fill', v>=0 ? '#77B88E' : '#C1717A');
+      rect.setAttribute('opacity','0.85');
+      svg.appendChild(rect);
+    });
+    const line = document.createElementNS('http://www.w3.org/2000/svg','line');
+    line.setAttribute('x1',0); line.setAttribute('x2',W); line.setAttribute('y1',zero); line.setAttribute('y2',zero);
+    line.setAttribute('stroke','#2A3B5C'); line.setAttribute('stroke-width','1');
+    svg.appendChild(line);
+  } else {
+    const text = document.createElementNS('http://www.w3.org/2000/svg','text');
+    text.setAttribute('x', W/2); text.setAttribute('y', H/2);
+    text.setAttribute('text-anchor','middle'); text.setAttribute('fill','#5E6F93');
+    text.setAttribute('font-family','IBM Plex Mono'); text.setAttribute('font-size','12');
+    text.textContent = 'No matching instances in the lookback window — try loosening the condition.';
+    svg.appendChild(text);
+  }
+
+  const verdict = document.getElementById('verdictText');
+  if(n){
+    verdict.textContent = `Over the last ~3 years, this exact setup showed up ${n} time${n>1?'s':''}. ${winPct}% of the time the market was higher by the exit point, with an average move of ${(avg>=0?'+':'')+avg.toFixed(2)}%. Make of that what you will — I'm a capybara, not a fortune teller.`;
+  } else {
+    verdict.textContent = `This condition didn't trigger in the sample window I checked. That's a real answer too — some setups are rarer than the internet thinks.`;
+  }
+  document.getElementById('resultsBlock').classList.add('show');
+}
+
+async function handleAnalyze(){
+  const raw = document.getElementById('queryInput').value;
+  if(!raw.trim()) return;
+  const btn = document.getElementById('analyzeBtn');
+  btn.textContent = 'Thinking…'; btn.disabled = true;
+
+  const p = parseQuery(raw);
+  renderParse(p);
+
+  document.getElementById('resultsBlock').classList.remove('show');
+  const {series, live} = await fetchSeries(p.instrument);
+  const hits = runBacktest(series, p);
+  renderResults(hits, p, live);
+
+  btn.textContent = 'Analyze →'; btn.disabled = false;
+}
+document.getElementById('analyzeBtn').addEventListener('click', handleAnalyze);
+document.getElementById('queryInput').addEventListener('keydown', (e)=>{
+  if(e.key==='Enter' && (e.metaKey||e.ctrlKey)) handleAnalyze();
+});
+
+const examples = [
+  "When NIFTY falls more than 1% in a day with high volatility, what happens the next day?",
+  "RELIANCE rises over 2% — what's the average move after 3 days?",
+  "How often does BANKNIFTY drop 1.5% and bounce back the same week?"
+];
+const chipRow = document.getElementById('exampleChips');
+examples.forEach(ex=>{
+  const chip = document.createElement('div');
+  chip.className='example-chip';
+  chip.textContent = ex.length>60 ? ex.slice(0,57)+'…' : ex;
+  chip.title = ex;
+  chip.addEventListener('click', ()=>{
+    document.getElementById('queryInput').value = ex;
+    handleAnalyze();
+  });
+  chipRow.appendChild(chip);
+});
+</script>
+</body>
+</html>
